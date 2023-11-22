@@ -25,7 +25,9 @@ typedef unsigned long ptr__t;
 #define INTERNAL 0
 #define LEAF 1
 
+//2*META_SIZE is for 2 metadata fields which are next and type
 #define NODE_CAPACITY ((BLK_SIZE - 2 * META_SIZE) / (KEY_SIZE + PTR_SIZE))
+
 #define LOG_CAPACITY  ((BLK_SIZE) / (VAL_SIZE))
 #define FANOUT NODE_CAPACITY
 

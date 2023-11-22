@@ -11,19 +11,22 @@
 
 
 int do_get_cmd(int argc, char *argv[], struct ArgState *as) {
+    //initialzing default values for arguments
     struct GetArgs ga = {
             .database_layers = as->layers,
             .threads = 1,
             .requests = 500
     };
+
+    //parsing options from the command
     parse_get_opts(argc, argv, &ga);
 
-    /* Load BPF program */
+    /* Load BPF program if xrp option is set */
     int bpf_fd = -1;
     if (ga.xrp) {
         bpf_fd = load_bpf_program("xrp-bpf/get.o");
     }
-
+    //checking whether the command is for a single key lookup
     if (ga.key_set) {
         return lookup_single_key(as->filename, ga.key, ga.xrp, bpf_fd);
     }

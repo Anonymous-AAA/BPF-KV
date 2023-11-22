@@ -16,12 +16,33 @@ int do_create_cmd(int argc, char *argv[], struct ArgState *as) {
 /* Create a new database on disk at [db_path] with [layer_num] layers */
 int load(size_t layer_num, char *db_path) {
     printf("Load the database of %lu layers\n", layer_num);
+    //Gets the fd of the database file.
     int db = initialize(layer_num, LOAD_MODE, db_path);
     int const MB = (1<<20);
 
     // 1. Load the index
+    /*
+        typedef struct _Node {
+            meta__t next;
+            meta__t type;
+            key__t key[NODE_CAPACITY];
+            ptr__t ptr[NODE_CAPACITY];
+        } Node;
+    */
+
     Node * const node_begin;
     int node_entries = (MB * 10) / sizeof(Node);
+    /*
+       int posix_memalign(void **memptr, size_t alignment, size_t size);
+    
+       The function posix_memalign() allocates size bytes and places the
+       address of the allocated memory in *memptr.  The address of the
+       allocated memory will be a multiple of alignment, which must be a
+       power of two and a multiple of sizeof(void *).  This address can
+       later be successfully passed to free(3).  If size is 0, then the
+       value placed in *memptr is either NULL or a unique pointer value
+    */
+    //Allocates node_begin
     if (posix_memalign((void **)&node_begin, 512, node_entries * sizeof(Node))) {
         perror("posix_memalign failed");
         close(db);
@@ -50,12 +71,14 @@ int load(size_t layer_num, char *db_path) {
             node->type = (i == layer_num - 1) ? LEAF : INTERNAL;
             size_t sub_extent = extent / NODE_CAPACITY;
             if (j == layer_cap[i] - 1) {
-                /* Last node in this level */
+                /* Last node in this level(ie:level i) */
                 node->next = 0;
             } else {
                 /* Pointer to the next node in this level; used for efficient scans */
                 node->next = next_node_offset * sizeof(Node);
             }
+            
+            //Iterating through each key in a level
             for (size_t k = 0; k < NODE_CAPACITY; k++) {
                 node->key[k] = start_key + k * sub_extent;
                 node->ptr[k] = node->type == INTERNAL ?

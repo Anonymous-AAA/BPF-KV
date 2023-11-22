@@ -33,6 +33,7 @@ SimpleKV currently DOES NOT verify that the correct eBPF is loaded.";
 
 
 int get_handler(char *db_path, int flag) {
+        //O_DIRECT indicates that the I/O operations for the file should be performed directly to and from the user-space buffer without any caching by the operating system's buffer cache.
     int fd = open(db_path, flag | O_DIRECT, 0655);
     if (fd < 0) {
         printf("Failed to open file %s!\n", db_path);
@@ -44,24 +45,42 @@ int get_handler(char *db_path, int flag) {
 /* Open database and logfile; calculate number of nodes per layer of B+tree */
 int initialize(size_t layer_num, int mode, char *db_path) {
     int db;
+    //checking whether to load data or just read
+    //O_CREAT create file if it does not exist
+    //O_TRUNC truncate file to zero size if the file already exists
+    //O_WRONLY open as write only
+    //O_RDONLY open as read only
+
     if (mode == LOAD_MODE) {
+        //returns the fd at the database path:/mnt/xrp/bpfkv_test_db
         db = get_handler(db_path, O_CREAT|O_TRUNC|O_WRONLY);
     } else {
         db = get_handler(db_path, O_RDONLY);
     }
 
+    //layer_cap is number of nodes in each layer
     layer_cap = (size_t *)malloc(layer_num * sizeof(size_t));
+    
+    //variable to store the total number of nodes
     total_node = 1;
+
+    //the first layer consists of a single node
     layer_cap[0] = 1;
+
+    //fanout is the number of children for each node (31)
     for (size_t i = 1; i < layer_num; i++) {
+        //layer_cap[i] : Stores the number of {key,ptr} that can be stored at level i.
         layer_cap[i] = layer_cap[i - 1] * FANOUT;
         total_node += layer_cap[i];
     }
     /* NOTE: this is actually 1 past the last key, since the keys start at 0 */
+    //As it is the b+ tree,the last layer will contain all the keys, so the max key can be calculated by the following
     max_key = layer_cap[layer_num - 1] * NODE_CAPACITY;
 
+    //! Did not understand why this is done
     cache_cap = 0;
 
+    //all these calculations were for just printing/logging purposes
     printf("%lu blocks in total, max key is %lu\n", total_node, max_key);
 
     return db;
@@ -340,8 +359,16 @@ int main(int argc, char *argv[]) {
         { 0 }
     };
     struct ArgState arg_state = default_argstate();
+    // DB_NAME:mnt/xrp/bpfkv_test_db , N_LAYERS:1
     struct argp argp = { options, parse_opt, "DB_NAME N_LAYERS CMD [CMD_ARGS] [CMD_OPTS]", doc };
     argp_parse(&argp, argc, argv, ARGP_IN_ORDER, 0, &arg_state);
 
     return arg_state.subcommand_retval;
 }
+
+//parse.h file
+/*struct ArgState {
+    char *filename;
+    int layers;
+    int subcommand_retval
+*/
