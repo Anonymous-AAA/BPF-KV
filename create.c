@@ -18,6 +18,8 @@ int load(size_t layer_num, char *db_path) {
     printf("Load the database of %lu layers\n", layer_num);
     //Gets the fd of the database file.
     int db = initialize(layer_num, LOAD_MODE, db_path);
+
+    //1 MB = 2^20 bytes
     int const MB = (1<<20);
 
     // 1. Load the index
@@ -29,8 +31,11 @@ int load(size_t layer_num, char *db_path) {
             ptr__t ptr[NODE_CAPACITY];
         } Node;
     */
-
+    
+    //!did not understand why does this work uninitialized even though it is a const pointer to a node
     Node * const node_begin;
+    //! did not understand node_entries why is there 10 MB?
+    //! node_entries= 2^20*10/512= 20480 (I guess it is kind of an upper limit to number of nodes)
     int node_entries = (MB * 10) / sizeof(Node);
     /*
        int posix_memalign(void **memptr, size_t alignment, size_t size);
@@ -41,6 +46,8 @@ int load(size_t layer_num, char *db_path) {
        power of two and a multiple of sizeof(void *).  This address can
        later be successfully passed to free(3).  If size is 0, then the
        value placed in *memptr is either NULL or a unique pointer value
+
+       Which means the address allocated will be a multiple of the alignment (Particularly useful for SIMD instructions)
     */
     //Allocates node_begin
     if (posix_memalign((void **)&node_begin, 512, node_entries * sizeof(Node))) {
@@ -63,6 +70,7 @@ int load(size_t layer_num, char *db_path) {
     ptr__t next_pos = 1;
     long next_node_offset = 1;
     Node *node = node_begin;
+    //!did not understand node_buf_end
     Node * const node_buf_end = node_begin + node_entries;
     for (size_t i = 0; i < layer_num; i++) {
         size_t extent = max_key / layer_cap[i], start_key = 0;
