@@ -39,6 +39,8 @@ static __inline ptr__t value_offset(ptr__t ptr) {
     return ptr & (BLK_SIZE - 1);
 }
 
+//makes the most significant bit of 64 bits to  1
+//! why are we doing this?
 static __inline ptr__t encode(ptr__t ptr) {
     return ptr | FILE_MASK;
 }

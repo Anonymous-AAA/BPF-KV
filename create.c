@@ -72,11 +72,22 @@ int load(size_t layer_num, char *db_path) {
     Node *node = node_begin;
     //!did not understand node_buf_end
     Node * const node_buf_end = node_begin + node_entries;
+
+    //looping over each layer of the b+ tree
     for (size_t i = 0; i < layer_num; i++) {
+
+        //! did not understand extent
+        //* Possible explanation: extent is used for uniformly dividing keys among nodes
         size_t extent = max_key / layer_cap[i], start_key = 0;
         printf("layer %lu extent %lu\n", i, extent);
+
+        //looping over each node in a layer
         for (size_t j = 0; j < layer_cap[i]; ++j, ++next_node_offset) {
+
+            //marking node as leaf node if it is the last layer else internal node
             node->type = (i == layer_num - 1) ? LEAF : INTERNAL;
+            //sub_extent are used to uniformly divide keys among key fields in a node
+            //sub_extent is the value difference between two adjacent keys in a node
             size_t sub_extent = extent / NODE_CAPACITY;
             if (j == layer_cap[i] - 1) {
                 /* Last node in this level(ie:level i) */
@@ -86,11 +97,13 @@ int load(size_t layer_num, char *db_path) {
                 node->next = next_node_offset * sizeof(Node);
             }
             
-            //Iterating through each key in a level
+            //Iterating through each key in a node
             for (size_t k = 0; k < NODE_CAPACITY; k++) {
+                //uniform filling of keys in a node
                 node->key[k] = start_key + k * sub_extent;
                 node->ptr[k] = node->type == INTERNAL ?
                                encode(next_pos   * BLK_SIZE) :
+                               //
                                encode(total_node * BLK_SIZE + (next_pos - total_node) * VAL_SIZE);
                 next_pos++;
             }

@@ -14,7 +14,7 @@
 #include "create.h"
 #include "get.h"
 
-//* size_t is being used for portability and it is the the type of value returned by sizeof operator
+//size_t is being used for portability and it is the the type of value returned by sizeof operator
 size_t worker_num;
 size_t total_node;
 //layer_cap[i] is the number of nodes in layer i
